@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pocket Calc">
+<meta name="theme-color" content="#121314">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%;box-sizing:border-box}html{background:#121314}body{font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
+<title>Pocket Calc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-screen phone app — header, dotted LCD display that flexes, scientific strip, big bevelled keypad */
+:root {
+  color-scheme: dark;
+  --bg: #121314;
+  --panel: #18191B;
+  --lcd: #1B1C1E;
+  --line: #2C2E31;
+  --fg: #F2F3F5;
+  --soft: #D6D8DC;
+  --muted: #8B8F96;
+  --blue-hi: #2F86CC;
+  --blue-lo: #17558F;
+  --blue-edge: #3E9BE2;
+  --blue-text: #5EB3F4;
+  --red-hi: #D23131;
+  --red-lo: #941818;
+  --grey-hi: #505256;
+  --grey-lo: #2D2F32;
+  --black-hi: #262729;
+  --black-lo: #141516;
+  --shift: #F2C230;
+  --amber: #E3A04F;
+  --amber-ink: #1A1004;
+  --font: "Barlow", "DIN Alternate", "D-DIN", "Avenir Next Condensed", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  padding-block: 10px;
+  display: flex;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  overflow: auto;
+}
+@media (min-width: 420px) { body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); } }
+.app {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  height: 100%;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Header */
+header { display: flex; align-items: center; gap: 8px; }
+.brand { margin-right: auto; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; letter-spacing: .02em; }
+.brand i { width: 8px; height: 8px; border-radius: 2px; background: var(--blue-text); box-shadow: 0 0 10px var(--blue-text); }
+.seg { display: flex; background: var(--black-lo); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 2px; }
+.seg button {
+  border: 0; background: none; color: var(--muted); cursor: pointer;
+  font: 600 14px var(--font); padding: 5px 12px; border-radius: 5px;
+}
+.seg button[aria-pressed="true"] { background: linear-gradient(var(--blue-hi), var(--blue-lo)); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
+.chip, .icon-btn { height: 34px; border-radius: 7px; cursor: pointer; display: grid; place-items: center; }
+.chip {
+  padding: 0 11px; font: 700 13px var(--font); letter-spacing: .08em; color: #fff;
+  background: linear-gradient(var(--red-hi), var(--red-lo)); border: 1px solid #E05050;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 2px 4px rgba(0,0,0,.5);
+}
+.chip.rad { background: linear-gradient(var(--blue-hi), var(--blue-lo)); border-color: var(--blue-edge); }
+.icon-btn {
+  width: 40px; color: var(--shift);
+  background: linear-gradient(var(--blue-hi), var(--blue-lo)); border: 1px solid var(--blue-edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 2px 4px rgba(0,0,0,.5);
+}
+.icon-btn svg { width: 19px; height: 19px; }
+.icon-btn[aria-expanded="true"] { background: linear-gradient(var(--blue-lo), var(--blue-hi)); }
+
+/* Display: dotted LCD panel */
+.display {
+  flex: 1; min-height: 150px;
+  background-color: var(--lcd);
+  background-image: radial-gradient(rgba(255,255,255,.075) 1px, transparent 1.3px);
+  background-size: 7px 7px;
+  border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,.65), 0 1px 0 rgba(255,255,255,.04);
+  padding: 16px 18px 14px;
+  display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 10px;
+  overflow: hidden;
+}
+.display.shake { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.calc { display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid #3E4044; }
+#cx, #cr, #main { width: 100%; white-space: nowrap; overflow-x: auto; scrollbar-width: none; font-variant-numeric: tabular-nums; line-height: 1.15; }
+#cx::-webkit-scrollbar, #cr::-webkit-scrollbar, #main::-webkit-scrollbar { display: none; }
+#cx { text-align: left; font-weight: 500; color: var(--fg); }
+#cr { text-align: right; font-weight: 600; cursor: copy; letter-spacing: .01em; }
+.entry { display: flex; flex-direction: column; gap: 4px; }
+#main { text-align: left; font-weight: 500; min-height: 1.15em; }
+.display .o { color: var(--blue-text); font-weight: 500; padding: 0 .06em; }
+.display .ghost { color: var(--muted); opacity: .45; }
+.caret { display: inline-block; width: 3px; height: .95em; margin-left: 2px; vertical-align: -.1em; background: var(--soft); border-radius: 1px; animation: blink 1.05s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+#sub { min-height: 28px; font-size: 21px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; align-items: center; justify-content: flex-end; }
+.err { background: var(--amber); color: var(--amber-ink); font-weight: 700; font-size: 14px; padding: 4px 10px; border-radius: 6px; }
+
+/* Keypad: bevelled hardware-style keys */
+.pad { display: flex; flex-direction: column; gap: 7px; }
+.sci { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.std { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.k {
+  --hi: var(--black-hi); --lo: var(--black-lo); --edge: #34363A;
+  height: clamp(50px, 7.6vh, 72px); border-radius: 7px;
+  border: 1px solid var(--edge);
+  background: linear-gradient(var(--hi), var(--lo));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 2px 0 #050505, 0 3px 6px rgba(0,0,0,.55);
+  color: var(--fg); font: 500 28px var(--font);
+  cursor: pointer; display: grid; place-items: center;
+  transition: transform .06s ease, filter .12s ease, box-shadow .06s ease;
+}
+.sci .k { height: clamp(38px, 5.4vh, 50px); font-size: 19px; }
+.k:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 0 #050505, 0 1px 2px rgba(0,0,0,.5); filter: brightness(1.15); }
+.k.grey { --hi: var(--grey-hi); --lo: var(--grey-lo); --edge: #5A5D61; font-size: 32px; }
+.k.blue { --hi: var(--blue-hi); --lo: var(--blue-lo); --edge: var(--blue-edge); color: #fff; font-size: 24px; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 0 #08243F, 0 3px 6px rgba(0,0,0,.55); }
+.k.red { --hi: var(--red-hi); --lo: var(--red-lo); --edge: #E05050; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 0 #3E0707, 0 3px 6px rgba(0,0,0,.55); }
+.k.op { font-size: 32px; }
+.k.eq { font-size: 34px; }
+.k.shift { color: var(--shift); font-weight: 700; }
+.sci .k.on { --hi: var(--blue-lo); --lo: var(--blue-hi); filter: brightness(1.2); }
+.k sup { font-size: .6em; }
+button:focus-visible { outline: 2px solid var(--blue-text); outline-offset: 2px; }
+@media (hover: hover) { .k:hover { filter: brightness(1.12); } }
+
+/* History sheet */
+.history {
+  position: absolute; inset: 46px 0 0 0; z-index: 5;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.6);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.history-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.history-head h2 { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.text-btn { background: none; border: 0; color: var(--blue-text); font: 600 15px var(--font); cursor: pointer; padding: 4px 2px; }
+.history ol { list-style: none; margin: 0; padding: 6px 10px 12px; overflow-y: auto; flex: 1; }
+.history li button {
+  width: 100%; background: none; border: 0; border-radius: 8px; cursor: pointer; text-align: right;
+  padding: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; color: var(--fg); font-family: var(--font);
+}
+.history li button:active { background: var(--black-hi); }
+@media (hover: hover) { .history li button:hover { background: var(--black-hi); } }
+.h-expr { color: var(--muted); font-size: 15px; word-break: break-all; }
+.h-res { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; word-break: break-all; }
+.empty { margin: auto; padding: 24px; max-width: 30ch; text-align: center; color: var(--muted); font-size: 16px; line-height: 1.5; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 20;
+  transform: translate(-50%, 10px); opacity: 0; pointer-events: none;
+  background: linear-gradient(var(--blue-hi), var(--blue-lo)); border: 1px solid var(--blue-edge); color: #fff;
+  font-weight: 600; font-size: 15px; padding: 8px 16px; border-radius: 8px;
+  transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) {
+  .k, .toast { transition: none; }
+  .display.shake, .caret { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><i></i>Pocket Calc</div>
+    <div class="seg" role="group" aria-label="Keypad">
+      <button id="mode-basic" type="button">Basic</button>
+      <button id="mode-sci" type="button">Sci</button>
+    </div>
+    <button id="angle" class="chip" type="button" aria-label="Angle unit">DEG</button>
+    <button id="hist-btn" class="icon-btn" type="button" aria-label="History" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
+    </button>
+  </header>
+
+  <section class="display" id="display" aria-live="polite">
+    <div class="calc" id="calc" hidden>
+      <div id="cx"></div>
+      <div id="cr" title="Tap to copy"></div>
+    </div>
+    <div class="entry">
+      <div id="main"></div>
+      <div id="sub"></div>
+    </div>
+  </section>
+
+  <div class="pad">
+    <div class="sci" id="sci"></div>
+    <div class="std" id="std"></div>
+  </div>
+
+  <section class="history" id="history" hidden>
+    <div class="history-head">
+      <h2>History</h2>
+      <button class="text-btn" id="hist-clear" type="button">Clear</button>
+    </div>
+    <ol id="hist-list"></ol>
+  </section>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  let expr = '', done = false, ans = 0, lastExpr = '', second = false;
+  let deg = store.get('pc.deg', true);
+  let sci = store.get('pc.sci', true);
+  let hist = store.get('pc.hist', []);
+  if (!Array.isArray(hist)) hist = [];
+  if (hist.length) ans = hist[0].r;
+
+  const OPS = '+−×÷^';
+
+  /* ---------- Parser (no eval) ---------- */
+  function tokenize(s) {
+    const t = []; let i = 0;
+    while (i < s.length) {
+      const r = s.slice(i);
+      let m = r.match(/^(\d+\.?\d*|\.\d+)(E[+-]?\d+)?/);
+      if (m) { t.push({ k: 'n', v: parseFloat(m[0].replace('E', 'e')) }); i += m[0].length; continue; }
+      m = r.match(/^(asin|acos|atan|sin|cos|tan|ln|log)/);
+      if (m) { t.push({ k: 'f', v: m[1] }); i += m[1].length; continue; }
+      if (r.startsWith('Ans')) { t.push({ k: 'n', v: ans }); i += 3; continue; }
+      const c = s[i];
+      if (c === 'π') { t.push({ k: 'n', v: Math.PI }); i++; continue; }
+      if (c === 'e') { t.push({ k: 'n', v: Math.E }); i++; continue; }
+      if (c === '√') { t.push({ k: 'f', v: 'sqrt' }); i++; continue; }
+      if ('+−×÷^()!%'.includes(c)) { t.push({ k: c }); i++; continue; }
+      throw new Error('syntax');
+    }
+    return t;
+  }
+
+  function fact(n) {
+    if (n < 0 || !Number.isInteger(n)) return NaN;
+    if (n > 170) return Infinity;
+    let r = 1; for (let i = 2; i <= n; i++) r *= i; return r;
+  }
+
+  function fn(f, a) {
+    const k = deg ? Math.PI / 180 : 1; let r;
+    switch (f) {
+      case 'sin': r = Math.sin(a * k); break;
+      case 'cos': r = Math.cos(a * k); break;
+      case 'tan': if (Math.abs(Math.cos(a * k)) < 1e-12) return NaN; r = Math.tan(a * k); break;
+      case 'asin': return Math.asin(a) / k;
+      case 'acos': return Math.acos(a) / k;
+      case 'atan': return Math.atan(a) / k;
+      case 'ln': return Math.log(a);
+      case 'log': return Math.log10(a);
+      case 'sqrt': return Math.sqrt(a);
+    }
+    return Math.abs(r) < 1e-12 ? 0 : r;
+  }
+
+  function evaluate(s) {
+    const t = tokenize(s); let p = 0;
+    const peek = () => t[p], next = () => t[p++];
+    const startsPrimary = x => x && (x.k === 'n' || x.k === 'f' || x.k === '(');
+    function sum() {
+      let v = term();
+      while (peek() && (peek().k === '+' || peek().k === '−')) {
+        const o = next().k, r = term(); v = o === '+' ? v + r : v - r;
+      }
+      return v;
+    }
+    function term() {
+      let v = unary();
+      for (;;) {
+        const x = peek();
+        if (x && (x.k === '×' || x.k === '÷')) { next(); const r = unary(); v = x.k === '×' ? v * r : v / r; }
+        else if (startsPrimary(x)) v *= unary();   // implicit multiplication: 2π, 3(4), sin(30)cos(60)
+        else break;
+      }
+      return v;
+    }
+    function unary() {
+      const x = peek();
+      if (x && x.k === '−') { next(); return -unary(); }
+      if (x && x.k === '+') { next(); return unary(); }
+      return power();
+    }
+    function power() {
+      const b = postfix();
+      if (peek() && peek().k === '^') { next(); return Math.pow(b, unary()); }
+      return b;
+    }
+    function postfix() {
+      let v = primary();
+      for (;;) {
+        const x = peek();
+        if (x && x.k === '!') { next(); v = fact(v); }
+        else if (x && x.k === '%') { next(); v = v / 100; }
+        else break;
+      }
+      return v;
+    }
+    function primary() {
+      const x = next();
+      if (!x) throw new Error('incomplete');
+      if (x.k === 'n') return x.v;
+      if (x.k === '(') {
+        const v = sum();
+        if (peek() && peek().k === ')') next(); else if (peek()) throw new Error('syntax');
+        return v;
+      }
+      if (x.k === 'f') {
+        const a = peek() && peek().k === '(' ? primary() : postfix();
+        return fn(x.v, a);
+      }
+      throw new Error('syntax');
+    }
+    const v = sum();
+    if (p < t.length) throw new Error('syntax');
+    return v;
+  }
+
+  /* ---------- Formatting ---------- */
+  const round12 = v => parseFloat(v.toPrecision(12));
+  function fmt(v) {
+    const a = Math.abs(v);
+    if (a !== 0 && (a >= 1e15 || a < 1e-9)) {
+      return v.toExponential(9).replace(/\.?0+e/, 'e').replace('e+', 'E').replace('e', 'E').replace(/-/g, '−');
+    }
+    return v.toLocaleString('en-US', { maximumFractionDigits: 10 }).replace('-', '−');
+  }
+  function fmtRaw(v) {
+    let s = String(round12(v)).replace('e+', 'E').replace('e', 'E');
+    if (s.startsWith('-')) s = '(−' + s.slice(1) + ')';
+    return s;
+  }
+  function group(s) {
+    return s.replace(/\d+(\.\d*)?(E[+-]?\d+)?/g, (m, frac, ex) => {
+      if (ex) return m.replace('-', '−');
+      const [i, f] = m.split('.');
+      return i.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (f !== undefined ? '.' + f : '');
+    });
+  }
+  function pretty(s) {
+    return group(s)
+      .replace(/a(sin|cos|tan)/g, '$1⁻¹')
+      .replace(/[+−×÷^]/g, '<span class="o">$&</span>');
+  }
+  const openCount = s => (s.match(/\(/g) || []).length - (s.match(/\)/g) || []).length;
+
+  /* ---------- Input ---------- */
+  function insert(k) {
+    const isOp = k.length === 1 && OPS.includes(k);
+    const usesAns = isOp || k === '%' || k === '!' || k.startsWith('^');
+    if (done) { expr = usesAns ? fmtRaw(ans) : ''; done = false; }
+    if (expr.length > 140) return;
+    const last = expr.slice(-1);
+
+    if (k === '.') {
+      const run = expr.match(/[\d.]*$/)[0];
+      if (run.includes('.')) return;
+      if (!run) k = '0.';
+    }
+    if (isOp) {
+      if (expr === '') { if (k === '−') expr = '−'; else expr = '0' + k; return; }
+      if (OPS.includes(last)) {
+        if (k === '−' && '×÷^'.includes(last)) { expr += k; return; }
+        expr = expr.replace(/[+−×÷^]+$/, '');
+        if (expr === '') return;
+      }
+      if (expr.slice(-1) === '(' && k !== '−') return;
+      expr += k; return;
+    }
+    if (k === '10^(' && /[\d.]$/.test(expr)) k = '×' + k;
+    expr += k;
+  }
+
+  function negate() {
+    if (done) { expr = fmtRaw(-ans); done = false; return; }
+    let m = expr.match(/\(−([^()]*)\)$/);
+    if (m) { expr = expr.slice(0, -m[0].length) + m[1]; return; }
+    m = expr.match(/(\(−)?(\d+\.?\d*(?:E[+-]?\d+)?|\.\d+|π|e|Ans)$/);
+    if (!m) { expr += '(−'; return; }
+    expr = expr.slice(0, -m[0].length) + (m[1] ? m[2] : '(−' + m[2]);
+  }
+
+  function backspace() {
+    if (done) { expr = ''; done = false; return; }
+    expr = expr.replace(/(asin\(|acos\(|atan\(|sin\(|cos\(|tan\(|ln\(|log\(|Ans|.)$/, '');
+  }
+
+  let errMsg = '';
+  function equals() {
+    if (!expr || done) return;
+    let v;
+    try { v = evaluate(expr); } catch (e) { return fail('Check the expression'); }
+    if (Number.isNaN(v)) return fail('Not a real number');
+    if (!isFinite(v)) return fail(/÷/.test(expr) ? "Can't divide by zero" : 'Too large to show');
+    v = round12(v);
+    lastExpr = expr + ')'.repeat(Math.max(0, openCount(expr)));
+    ans = v; done = true; errMsg = '';
+    hist.unshift({ x: lastExpr, r: v });
+    hist = hist.slice(0, 60);
+    store.set('pc.hist', hist);
+    renderHistory();
+    render();
+  }
+  function fail(msg) {
+    errMsg = msg; render();
+    const d = $('#display'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake');
+  }
+
+  function press(k) {
+    errMsg = '';
+    if (k === 'AC') { expr = ''; done = false; lastExpr = ''; }
+    else if (k === 'back') backspace();
+    else if (k === '=') return equals();
+    else if (k === 'neg') negate();
+    else insert(k);
+    render();
+  }
+
+  /* ---------- Render ---------- */
+  const main = $('#main'), sub = $('#sub'), calcEl = $('#calc'), cx = $('#cx'), cr = $('#cr');
+  function render() {
+    calcEl.hidden = !lastExpr;
+    if (lastExpr) { cx.innerHTML = pretty(lastExpr); cr.textContent = fmt(ans); }
+    const n = Math.max(0, openCount(expr));
+    main.innerHTML = (done || !expr ? '' : pretty(expr) + (n ? '<span class="ghost">' + ')'.repeat(n) + '</span>' : '')) + '<span class="caret"></span>';
+    sub.textContent = '';
+    if (!done && expr && !/^[\d.]*$/.test(expr)) {
+      try { const v = evaluate(expr); if (isFinite(v)) sub.textContent = '= ' + fmt(round12(v)); } catch (e) {}
+    }
+    if (errMsg) sub.innerHTML = '<span class="err">' + errMsg + '</span>';
+    fit();
+  }
+  function fitEl(el, start, min, toEnd) {
+    let s = start; el.style.fontSize = s + 'px';
+    while (el.scrollWidth > el.clientWidth && s > min) { s -= 2; el.style.fontSize = s + 'px'; }
+    if (toEnd) el.scrollLeft = el.scrollWidth;
+  }
+  function fit() {
+    const big = sci ? 52 : 62;
+    if (lastExpr) { fitEl(cx, big * .62, 18, true); fitEl(cr, big, 26, false); }
+    fitEl(main, big * .62, 20, true);
+  }
+
+  /* ---------- Keys ---------- */
+  const STD = [
+    ['AC', 'AC', 'blue'], ['back', '⌫', 'red'], ['%', '%', 'blue'], ['÷', '÷', 'op'],
+    ['7', '7', 'grey'], ['8', '8', 'grey'], ['9', '9', 'grey'], ['×', '×', 'op'],
+    ['4', '4', 'grey'], ['5', '5', 'grey'], ['6', '6', 'grey'], ['−', '−', 'op'],
+    ['1', '1', 'grey'], ['2', '2', 'grey'], ['3', '3', 'grey'], ['+', '+', 'op'],
+    ['neg', '±', 'blue'], ['0', '0', 'grey'], ['.', '.', 'grey'], ['=', '=', 'eq']
+  ];
+  const SCI = [
+    { k: '2nd', l: '2nd' },
+    { k: 'sin(', l: 'sin', k2: 'asin(', l2: 'sin<sup>−1</sup>' },
+    { k: 'cos(', l: 'cos', k2: 'acos(', l2: 'cos<sup>−1</sup>' },
+    { k: 'tan(', l: 'tan', k2: 'atan(', l2: 'tan<sup>−1</sup>' },
+    { k: 'π', l: 'π' },
+    { k: 'ln(', l: 'ln', k2: 'e^(', l2: 'e<sup>x</sup>' },
+    { k: 'log(', l: 'log', k2: '10^(', l2: '10<sup>x</sup>' },
+    { k: '√(', l: '√' },
+    { k: '^2', l: 'x<sup>2</sup>', k2: '^(−1)', l2: '1/x' },
+    { k: '^', l: 'x<sup>y</sup>' },
+    { k: '(', l: '(' }, { k: ')', l: ')' },
+    { k: '!', l: 'x!' }, { k: 'e', l: 'e' }, { k: 'Ans', l: 'Ans' }
+  ];
+  const labels = { '÷': 'Divide', '×': 'Multiply', '−': 'Minus', '+': 'Plus', '=': 'Equals', back: 'Delete', neg: 'Change sign', AC: 'All clear', '%': 'Percent' };
+
+  const stdEl = $('#std');
+  STD.forEach(([k, l = k, cls = '']) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'k ' + cls; b.textContent = l;
+    if (labels[k]) b.setAttribute('aria-label', labels[k]);
+    b.addEventListener('click', () => press(k));
+    stdEl.appendChild(b);
+  });
+  const sciEl = $('#sci');
+  const sciBtns = SCI.map(d => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = d.k === '2nd' ? 'k blue shift' : 'k'; b.innerHTML = d.k === '2nd' ? 'Shift' : d.l;
+    b.addEventListener('click', () => {
+      if (d.k === '2nd') { second = !second; paintSecond(); return; }
+      const k = second && d.k2 ? d.k2 : d.k;
+      if (second) { second = false; paintSecond(); }
+      press(k);
+    });
+    sciEl.appendChild(b);
+    return { b, d };
+  });
+  function paintSecond() {
+    sciBtns.forEach(({ b, d }) => {
+      if (d.k === '2nd') { b.classList.toggle('on', second); b.setAttribute('aria-pressed', second); }
+      else if (d.l2) b.innerHTML = second ? d.l2 : d.l;
+    });
+  }
+
+  /* ---------- Mode, angle, history ---------- */
+  function paintMode() {
+    $('#mode-basic').setAttribute('aria-pressed', !sci);
+    $('#mode-sci').setAttribute('aria-pressed', sci);
+    sciEl.hidden = !sci;
+    $('#angle').hidden = !sci;
+    $('#angle').textContent = deg ? 'DEG' : 'RAD';
+    $('#angle').classList.toggle('rad', !deg);
+    fit();
+  }
+  $('#mode-basic').addEventListener('click', () => { sci = false; store.set('pc.sci', sci); paintMode(); });
+  $('#mode-sci').addEventListener('click', () => { sci = true; store.set('pc.sci', sci); paintMode(); });
+  $('#angle').addEventListener('click', () => { deg = !deg; store.set('pc.deg', deg); paintMode(); render(); });
+
+  const histEl = $('#history'), histBtn = $('#hist-btn');
+  function toggleHistory(open) {
+    histEl.hidden = !open;
+    histBtn.setAttribute('aria-expanded', open);
+  }
+  histBtn.addEventListener('click', () => toggleHistory(histEl.hidden));
+  $('#hist-clear').addEventListener('click', () => { hist = []; store.set('pc.hist', hist); renderHistory(); });
+  function renderHistory() {
+    const ol = $('#hist-list');
+    $('#hist-clear').hidden = !hist.length;
+    if (!hist.length) {
+      ol.innerHTML = '<li class="empty">Finished calculations land here. Tap one to drop its result back into the display.</li>';
+      return;
+    }
+    ol.innerHTML = '';
+    hist.forEach(h => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = '<span class="h-expr">' + pretty(h.x).replace(/<[^>]+>/g, '') + ' =</span><span class="h-res">' + fmt(h.r) + '</span>';
+      b.addEventListener('click', () => {
+        if (done) { expr = ''; done = false; }
+        const last = expr.slice(-1);
+        if (last && !OPS.includes(last) && last !== '(') expr += '×';
+        expr += fmtRaw(h.r);
+        toggleHistory(false); errMsg = ''; render();
+      });
+      li.appendChild(b); ol.appendChild(li);
+    });
+  }
+
+  /* ---------- Copy ---------- */
+  const toast = $('#toast'); let toastT;
+  function showToast(m) { toast.textContent = m; toast.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('show'), 1400); }
+  cr.addEventListener('click', () => {
+    const text = String(ans);
+    try {
+      navigator.clipboard.writeText(text).then(() => showToast('Copied ' + fmt(ans)), () => showToast(text));
+    } catch (e) { showToast(text); }
+  });
+
+  /* ---------- Keyboard ---------- */
+  const KEYMAP = { '*': '×', 'x': '×', '/': '÷', '-': '−', '+': '+', '^': '^', '(': '(', ')': ')', '!': '!', '%': '%', '.': '.', ',': '.', 'p': 'π', 'e': 'e' };
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    let k = null;
+    if (/^[0-9]$/.test(e.key)) k = e.key;
+    else if (KEYMAP[e.key]) k = KEYMAP[e.key];
+    else if (e.key === 'Enter' || e.key === '=') k = '=';
+    else if (e.key === 'Backspace') k = 'back';
+    else if (e.key === 'Escape' || e.key === 'Delete') { if (!histEl.hidden) { toggleHistory(false); e.preventDefault(); return; } k = 'AC'; }
+    if (k) { e.preventDefault(); press(k); }
+  });
+
+  window.addEventListener('resize', fit);
+  paintMode(); paintSecond(); renderHistory(); render();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();
+</script>
+
+</body>
+</html>

@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#121314">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-512.png">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%;box-sizing:border-box}html{background:#121314}body{font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
+<style>html{background:#121314}body{font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
 <title>Pocket Calc</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,7 +50,10 @@ body {
   font-family: var(--font);
   padding-left: max(12px, env(safe-area-inset-left, 0px));
   padding-right: max(12px, env(safe-area-inset-right, 0px));
-  padding-block: 10px;
+  position: fixed;
+  inset: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
   display: flex;
   justify-content: center;
   -webkit-tap-highlight-color: transparent;
@@ -64,7 +67,6 @@ body {
   width: 100%;
   max-width: 460px;
   height: 100%;
-  min-height: 560px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -129,7 +131,7 @@ header { display: flex; align-items: center; gap: 8px; }
 .std { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
 .k {
   --hi: var(--black-hi); --lo: var(--black-lo); --edge: #34363A;
-  height: clamp(50px, 7.6vh, 72px); border-radius: 7px;
+  height: clamp(50px, 8.2vh, 80px); border-radius: 7px;
   border: 1px solid var(--edge);
   background: linear-gradient(var(--hi), var(--lo));
   box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 2px 0 #050505, 0 3px 6px rgba(0,0,0,.55);
@@ -137,7 +139,7 @@ header { display: flex; align-items: center; gap: 8px; }
   cursor: pointer; display: grid; place-items: center;
   transition: transform .06s ease, filter .12s ease, box-shadow .06s ease;
 }
-.sci .k { height: clamp(38px, 5.4vh, 50px); font-size: 19px; }
+.sci .k { height: clamp(38px, 5.6vh, 54px); font-size: 19px; }
 .k:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 0 #050505, 0 1px 2px rgba(0,0,0,.5); filter: brightness(1.15); }
 .k.grey { --hi: var(--grey-hi); --lo: var(--grey-lo); --edge: #5A5D61; font-size: 32px; }
 .k.blue { --hi: var(--blue-hi); --lo: var(--blue-lo); --edge: var(--blue-edge); color: #fff; font-size: 24px; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 0 #08243F, 0 3px 6px rgba(0,0,0,.55); }
@@ -146,7 +148,8 @@ header { display: flex; align-items: center; gap: 8px; }
 .k.eq { font-size: 34px; }
 .k.shift { color: var(--shift); font-weight: 700; }
 .sci .k.on { --hi: var(--blue-lo); --lo: var(--blue-hi); filter: brightness(1.2); }
-.k sup { font-size: .6em; }
+.k sup { font-size: .6em; line-height: 0; vertical-align: .7em; }
+.k span { white-space: nowrap; }
 button:focus-visible { outline: 2px solid var(--blue-text); outline-offset: 2px; }
 @media (hover: hover) { .k:hover { filter: brightness(1.12); } }
 
@@ -506,7 +509,7 @@ button:focus-visible { outline: 2px solid var(--blue-text); outline-offset: 2px;
   const sciEl = $('#sci');
   const sciBtns = SCI.map(d => {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = d.k === '2nd' ? 'k blue shift' : 'k'; b.innerHTML = d.k === '2nd' ? 'Shift' : d.l;
+    b.type = 'button'; b.className = d.k === '2nd' ? 'k blue shift' : 'k'; b.innerHTML = '<span>' + (d.k === '2nd' ? 'Shift' : d.l) + '</span>';
     b.addEventListener('click', () => {
       if (d.k === '2nd') { second = !second; paintSecond(); return; }
       const k = second && d.k2 ? d.k2 : d.k;
@@ -519,7 +522,7 @@ button:focus-visible { outline: 2px solid var(--blue-text); outline-offset: 2px;
   function paintSecond() {
     sciBtns.forEach(({ b, d }) => {
       if (d.k === '2nd') { b.classList.toggle('on', second); b.setAttribute('aria-pressed', second); }
-      else if (d.l2) b.innerHTML = second ? d.l2 : d.l;
+      else if (d.l2) b.innerHTML = '<span>' + (second ? d.l2 : d.l) + '</span>';
     });
   }
 
